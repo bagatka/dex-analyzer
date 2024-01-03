@@ -70,8 +70,8 @@ export class AppComponent {
         for (let key in groups) {
           const group = groups[key];
           this.labels.push(key);
-          const total = group.reduce((acc, x) => acc + x.value, 0);
-          const fee = group.reduce((acc, x) => acc + x.fee, 0);
+          const total = group.reduce((acc, x) => acc + x.value, 0) / 10**18;
+          const fee = group.reduce((acc, x) => acc + x.fee, 0) / 10**18;
           console.log(`${key}: ${total} (${fee}) [left ${lastValue}]`);
           // this.data.push([lastValue, lastValue + total]);
           lastValue += total;
