@@ -17,7 +17,6 @@ const wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 })
 export class AppComponent {
   private readonly httpClient = inject(HttpClient);
-  data: [number, number][] = [];
   feeData: number[] = [];
   wethInPoolData: number[] = [];
   labels: string[] = [];
@@ -36,7 +35,6 @@ export class AppComponent {
     this.chart = undefined;
 
     this.labels = [];
-    this.data = [];
     this.feeData = [];
     this.wethInPoolData = [];
     this.movingAverageBlockTimeData = [];
@@ -69,7 +67,6 @@ export class AppComponent {
 
         const groups = groupBy(rawData, (x: any) => x.blockNumber);
 
-        this.data = [];
         let lastValue = 0;
         let feeSum = 0; //Number(addLiquidityTx.gasPrice) * Number(addLiquidityTx.gasUsed);
         let movingAverageBuffer: number[] = [];
@@ -80,7 +77,7 @@ export class AppComponent {
           const total = group.reduce((acc, x) => acc + x.value, 0);
           const fee = group.reduce((acc, x) => acc + x.fee, 0);
           console.log(`${key}: ${total} (${fee}) [left ${lastValue}]`);
-          this.data.push([lastValue, lastValue + total]);
+          // this.data.push([lastValue, lastValue + total]);
           lastValue += total;
           feeSum += fee;
           this.feeData.push(feeSum);
