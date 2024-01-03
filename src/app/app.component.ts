@@ -137,7 +137,7 @@ export class AppComponent {
                 position: 'left',
               },
               y1: {
-                type: 'linear',
+                type: 'logarithmic',
                 display: true,
                 position: 'right',
 
