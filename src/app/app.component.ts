@@ -91,11 +91,11 @@ export class AppComponent {
 
           if (movingAverageBuffer.length === movingAverageFactor) {
             movingAverageBuffer.shift();
-            movingAverageBuffer.push(Number(key) - lastBlockNumber);
+            movingAverageBuffer.push((Number(key) - lastBlockNumber) * 12);
             lastBlockNumber = Number(key);
             this.movingAverageBlockTimeData.push(movingAverageBuffer.reduce((acc, x) => acc + x, 0) / movingAverageFactor);
           } else {
-            movingAverageBuffer.push(Number(key) - lastBlockNumber);
+            movingAverageBuffer.push((Number(key) - lastBlockNumber) * 12);
             lastBlockNumber = Number(key);
             this.movingAverageBlockTimeData.push(null);
           }
