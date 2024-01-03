@@ -86,14 +86,15 @@ export class AppComponent {
           if (this.movingAverageBlockTimeData.length === 0) {
             this.movingAverageBlockTimeData.push(null);
             lastBlockNumber = Number(key);
+            movingAverageBuffer.push(null!);
             continue;
           }
 
           if (movingAverageBuffer.length === movingAverageFactor) {
             movingAverageBuffer.shift();
             movingAverageBuffer.push((Number(key) - lastBlockNumber) * 12);
-            lastBlockNumber = Number(key);
             this.movingAverageBlockTimeData.push(movingAverageBuffer.reduce((acc, x) => acc + x, 0) / movingAverageFactor);
+            lastBlockNumber = Number(key);
           } else {
             movingAverageBuffer.push((Number(key) - lastBlockNumber) * 12);
             lastBlockNumber = Number(key);
@@ -101,6 +102,7 @@ export class AppComponent {
           }
         }
 
+        console.log(this.movingAverageBlockTimeData);
         const ctx = this.canvas.nativeElement;
 
         const config = {
