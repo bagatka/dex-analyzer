@@ -49,11 +49,7 @@ export class AppComponent {
           let value;
 
           if (x.from.toLowerCase() === poolAddress) {
-            if (x.to.toLowerCase() === '0x7a250d5630b4cf539739df2c5dacb4c659f2488d') {
               value = -Number(x.value);
-            } else {
-              value = Number(x.value);
-            }
           } else {
             value = Number(x.value);
           }
