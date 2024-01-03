@@ -19,6 +19,7 @@
           "options": {
             "outputPath": "dist/sniper-analytics",
             "index": "src/index.html",
+            "baseHref": "/dex-analyzer/",
             "browser": "src/main.ts",
             "polyfills": [
               "zone.js"
