@@ -23,7 +23,7 @@ export class AppComponent {
   movingAverageBlockTimeData: Array<number | null> = [];
   form = inject(FormBuilder).group({
     movingAverageFactor: [4],
-    poolAddress: ['0xBca4C3A5Dd997F013BAcAcEEf8367728007cD028']
+    poolAddress: ['0xadea9b0c84898142748268253fe9f1c05ba9c296']
   });
   chart?: Chart;
 
@@ -58,6 +58,7 @@ export class AppComponent {
             value: value,
             blockNumber: x.blockNumber,
             fee: Number(x.gasPrice) * Number(x.gasUsed),
+            hash: x.hash
           }
         });
 
@@ -71,9 +72,12 @@ export class AppComponent {
           const group = groups[key];
           this.labels.push(key);
           const total = group.reduce((acc, x) => acc + x.value, 0) / 10**18;
-          const fee = group.reduce((acc, x) => acc + x.fee, 0) / 10**18;
-          console.log(`${key}: ${total} (${fee}) [left ${lastValue}]`);
-          // this.data.push([lastValue, lastValue + total]);
+          const txGroups = groupBy(group, (x: any) => x.hash);
+          console.log(txGroups);
+          let fee = 0;
+          for (let txKey in txGroups) {
+            fee = txGroups[txKey].reduce((acc, x) => acc + x.fee, 0) / 10**18;
+          }
           lastValue += total;
           feeSum += fee;
           this.feeData.push(feeSum);
@@ -173,6 +177,7 @@ export class AppComponent {
       .subscribe((data: any) => {
         // const addLiquidityTx = data.result.shift();
         console.log(data.result);
+        // console.log(data.result.sort((x: any) => Number(x.gasPrice) * Number(x.gasUsed)));
         const rawData = data.result.map((x: any) => {
           let value;
 
@@ -181,12 +186,12 @@ export class AppComponent {
           } else {
             value = Number(x.value);
           }
-          console.log(value);
 
           return {
             value: value,
             blockNumber: x.blockNumber,
             fee: Number(x.gasPrice) * Number(x.gasUsed),
+            hash: x.hash
           }
         });
 
@@ -196,23 +201,21 @@ export class AppComponent {
 
         let lastValue = 0;
         let feeSum = 0; //Number(addLiquidityTx.gasPrice) * Number(addLiquidityTx.gasUsed);
-        let movingAverageBuffer: number[] = [];
-        let lastBlockNumber = 0;
         for (let key in groups) {
           const group = groups[key];
           this.labels.push(key);
           const total = group.reduce((acc, x) => acc + x.value, 0) / 10**18;
-          const fee = group.reduce((acc, x) => acc + x.fee, 0) / 10**18;
-          console.log(`${key}: ${total} (${fee}) [left ${lastValue}]`);
-          // this.data.push([lastValue, lastValue + total]);
+          const txGroups = groupBy(group, (x: any) => x.hash);
+          let fee = 0;
+          for (let txKey in txGroups) {
+            fee = txGroups[txKey].reduce((acc, x) => acc + x.fee, 0) / 10**18;
+          }
           lastValue += total;
           feeSum += fee;
           newData.push({x: feeSum, y: lastValue});
         }
 
         const ctx = this.canvas.nativeElement;
-
-        console.log(newData);
 
         const config = {
           type: 'scatter' as const,
