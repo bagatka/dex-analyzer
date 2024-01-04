@@ -154,6 +154,93 @@ export class AppComponent {
         Chart.register(...registerables);
     });
   }
+
+
+  renderChartWethFees() {
+    this.chart?.clear();
+    this.chart?.destroy();
+    this.chart = undefined;
+
+    this.labels = [];
+    this.feeData = [];
+    this.wethInPoolData = [];
+    this.movingAverageBlockTimeData = [];
+
+    const movingAverageFactor = this.form.get('movingAverageFactor')?.getRawValue();
+    const poolAddress = this.form.get('poolAddress')?.getRawValue();
+
+    this.httpClient.get(`https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${wethAddress}&address=${poolAddress}&startblock=0&endblock=28922248&sort=asc&apikey=JKZX1IQUGNZR8CAXGG8NN9KD3BAWMEPF4H`)
+      .subscribe((data: any) => {
+        // const addLiquidityTx = data.result.shift();
+        console.log(data.result);
+        const rawData = data.result.map((x: any) => {
+          let value;
+
+          if (x.from.toLowerCase() === poolAddress.toLowerCase()) {
+              value = -Number(x.value);
+          } else {
+            value = Number(x.value);
+          }
+          console.log(value);
+
+          return {
+            value: value,
+            blockNumber: x.blockNumber,
+            fee: Number(x.gasPrice) * Number(x.gasUsed),
+          }
+        });
+
+        const groups = groupBy(rawData, (x: any) => x.blockNumber);
+
+        const newData: Array<{x: number, y: number}> = [];
+
+        let lastValue = 0;
+        let feeSum = 0; //Number(addLiquidityTx.gasPrice) * Number(addLiquidityTx.gasUsed);
+        let movingAverageBuffer: number[] = [];
+        let lastBlockNumber = 0;
+        for (let key in groups) {
+          const group = groups[key];
+          this.labels.push(key);
+          const total = group.reduce((acc, x) => acc + x.value, 0) / 10**18;
+          const fee = group.reduce((acc, x) => acc + x.fee, 0) / 10**18;
+          console.log(`${key}: ${total} (${fee}) [left ${lastValue}]`);
+          // this.data.push([lastValue, lastValue + total]);
+          lastValue += total;
+          feeSum += fee;
+          newData.push({x: feeSum, y: lastValue});
+        }
+
+        const ctx = this.canvas.nativeElement;
+
+        console.log(newData);
+
+        const config = {
+          type: 'scatter' as const,
+          data: {
+            datasets: [{
+                label: 'WETH in pool',
+                data: newData,
+                showLine: true
+            }]
+          },
+          options: {
+            scales: {
+              x: {
+                type: 'linear',
+                position: 'bottom'
+              },
+              y: {
+                type: 'linear',
+                position: 'left'
+              }
+            }
+          }
+        };
+
+        this.chart = new Chart(ctx, config as any);
+        Chart.register(...registerables);
+    });
+  }
 }
 
 const groupBy = <T>(array: T[], predicate: (value: T, index: number, array: T[]) => string) =>

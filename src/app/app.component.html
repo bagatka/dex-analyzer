@@ -5,5 +5,6 @@
   <input id="poolAddress" type="text" formControlName="poolAddress" />
 </form>
 
-<button (click)="renderChart()">Render chart</button>
+<button (click)="renderChart()">Render chart (general)</button>
+<button (click)="renderChartWethFees()">Render chart (WETH/Fees)</button>
 <canvas #canvas></canvas>
