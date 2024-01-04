@@ -244,6 +244,112 @@ export class AppComponent {
         Chart.register(...registerables);
     });
   }
+
+  renderChart3() {
+    this.chart?.clear();
+    this.chart?.destroy();
+    this.chart = undefined;
+
+    this.labels = [];
+    this.feeData = [];
+    this.wethInPoolData = [];
+    this.movingAverageBlockTimeData = [];
+
+    const movingAverageFactor = this.form.get('movingAverageFactor')?.getRawValue();
+    const poolAddress = this.form.get('poolAddress')?.getRawValue();
+
+    this.httpClient.get(`https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${wethAddress}&address=${poolAddress}&startblock=0&endblock=28922248&sort=asc&apikey=JKZX1IQUGNZR8CAXGG8NN9KD3BAWMEPF4H`)
+      .subscribe((data: any) => {
+        // const addLiquidityTx = data.result.shift();
+        const rawData = data.result.map((x: any) => {
+          let value;
+
+          if (x.from.toLowerCase() === poolAddress) {
+              value = -Number(x.value);
+          } else {
+            value = Number(x.value);
+          }
+
+          return {
+            value: value,
+            blockNumber: x.blockNumber,
+            fee: Number(x.gasPrice) * Number(x.gasUsed),
+            hash: x.hash
+          }
+        });
+
+        const groups = groupBy(rawData, (x: any) => x.blockNumber);
+
+        const wethDivFees: number[] = [];
+        let lastValue = 0;
+        let feeSum = 0; //Number(addLiquidityTx.gasPrice) * Number(addLiquidityTx.gasUsed);
+        for (let key in groups) {
+          const group = groups[key];
+          this.labels.push(key);
+          const total = group.reduce((acc, x) => acc + x.value, 0) / 10**18;
+          const txGroups = groupBy(group, (x: any) => x.hash);
+          console.log(txGroups);
+          let fee = 0;
+          for (let txKey in txGroups) {
+            fee = txGroups[txKey].reduce((acc, x) => acc + x.fee, 0) / 10**18;
+          }
+          lastValue += total;
+          feeSum += fee;
+          this.feeData.push(feeSum);
+          this.wethInPoolData.push(lastValue);
+          wethDivFees.push(lastValue / feeSum);
+        }
+        const ctx = this.canvas.nativeElement;
+
+        const config = {
+          type: 'line' as const,
+          data: {
+            labels: this.labels,
+            datasets: [{
+              label: 'WETH in pool',
+              data: this.wethInPoolData,
+              yAxisID: 'y',
+            }, {
+              label: 'WETH/Fees',
+              data: wethDivFees,
+              yAxisID: 'y1',
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: 'top' as const,
+              },
+              title: {
+                display: true,
+                text: 'Chart.js Floating Bar Chart'
+              }
+            },
+            scales: {
+              y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+
+                // grid line settings
+                grid: {
+                  drawOnChartArea: false, // only want the grid lines for one axis to show up
+                },
+              },
+            }
+          }
+        };
+
+        this.chart = new Chart(ctx, config as any);
+        Chart.register(...registerables);
+    });
+  }
 }
 
 const groupBy = <T>(array: T[], predicate: (value: T, index: number, array: T[]) => string) =>
