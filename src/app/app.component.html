@@ -5,7 +5,17 @@
   <input id="poolAddress" type="text" formControlName="poolAddress" />
 </form>
 
-<button (click)="renderChart()">Render chart (general)</button>
+<button (click)="renderChartCommon()">Render chart (general)</button>
 <button (click)="renderChartWethFees()">Render chart (WETH/Fees)</button>
-<button (click)="renderChart3()">Render chart (WETH in Pool + WETH/Fees)</button>
+<div [formGroup]="formWethFeesWethPoolSize">
+  <button (click)="renderChartWethFeesWethPoolSize()">Render chart (WETH in Pool + WETH/Fees)</button>
+  @if (chartType === ChartType.WethFeesWithWethPoolSize)
+  {
+    <!-- Dropdown select to choose linear or logarithmic -->
+    <select formControlName="scaleType" (change)="changeChartType()">
+      <option ngValue="linear">Linear</option>
+      <option ngValue="logarithmic">Logarithmic</option>
+    </select>
+  }
+</div>
 <canvas #canvas></canvas>

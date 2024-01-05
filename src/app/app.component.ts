@@ -7,6 +7,11 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 
 const wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 
+enum ChartType {
+  Common,
+  WethFees,
+  WethFeesWithWethPoolSize
+}
 
 @Component({
   selector: 'app-root',
@@ -17,6 +22,7 @@ const wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 })
 export class AppComponent {
   private readonly httpClient = inject(HttpClient);
+  chartType: ChartType = ChartType.Common;
   feeData: number[] = [];
   wethInPoolData: number[] = [];
   labels: string[] = [];
@@ -25,19 +31,21 @@ export class AppComponent {
     movingAverageFactor: [4],
     poolAddress: ['0xadea9b0c84898142748268253fe9f1c05ba9c296']
   });
+  formWethFeesWethPoolSize = inject(FormBuilder).group({
+    scaleType: ['linear']
+  });
   chart?: Chart;
+
+  get ChartType() {
+    return ChartType;
+  }
 
   @ViewChild('canvas') canvas!: ElementRef<HTMLCanvasElement>;
 
-  renderChart() {
-    this.chart?.clear();
-    this.chart?.destroy();
-    this.chart = undefined;
-
-    this.labels = [];
-    this.feeData = [];
-    this.wethInPoolData = [];
-    this.movingAverageBlockTimeData = [];
+  renderChartCommon() {
+    this.chartType = ChartType.Common;
+    this.clearChart();
+    this.clearData();
 
     const movingAverageFactor = this.form.get('movingAverageFactor')?.getRawValue();
     const poolAddress = this.form.get('poolAddress')?.getRawValue();
@@ -73,7 +81,6 @@ export class AppComponent {
           this.labels.push(key);
           const total = group.reduce((acc, x) => acc + x.value, 0) / 10**18;
           const txGroups = groupBy(group, (x: any) => x.hash);
-          console.log(txGroups);
           let fee = 0;
           for (let txKey in txGroups) {
             fee = txGroups[txKey].reduce((acc, x) => acc + x.fee, 0) / 10**18;
@@ -102,7 +109,6 @@ export class AppComponent {
           }
         }
 
-        console.log(this.movingAverageBlockTimeData);
         const ctx = this.canvas.nativeElement;
 
         const config = {
@@ -161,22 +167,14 @@ export class AppComponent {
 
 
   renderChartWethFees() {
-    this.chart?.clear();
-    this.chart?.destroy();
-    this.chart = undefined;
-
-    this.labels = [];
-    this.feeData = [];
-    this.wethInPoolData = [];
-    this.movingAverageBlockTimeData = [];
-
-    const movingAverageFactor = this.form.get('movingAverageFactor')?.getRawValue();
+    this.chartType = ChartType.WethFees;
+    this.clearChart();
+    this.clearData();
     const poolAddress = this.form.get('poolAddress')?.getRawValue();
 
     this.httpClient.get(`https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${wethAddress}&address=${poolAddress}&startblock=0&endblock=28922248&sort=asc&apikey=JKZX1IQUGNZR8CAXGG8NN9KD3BAWMEPF4H`)
       .subscribe((data: any) => {
         // const addLiquidityTx = data.result.shift();
-        console.log(data.result);
         // console.log(data.result.sort((x: any) => Number(x.gasPrice) * Number(x.gasUsed)));
         const rawData = data.result.map((x: any) => {
           let value;
@@ -245,17 +243,12 @@ export class AppComponent {
     });
   }
 
-  renderChart3() {
-    this.chart?.clear();
-    this.chart?.destroy();
-    this.chart = undefined;
+  renderChartWethFeesWethPoolSize() {
+    const scale = this.formWethFeesWethPoolSize.get('scaleType')?.getRawValue() as 'linear' | 'logarithmic' ?? 'linear';
+    this.chartType = ChartType.WethFeesWithWethPoolSize;
+    this.clearChart();
+    this.clearData();
 
-    this.labels = [];
-    this.feeData = [];
-    this.wethInPoolData = [];
-    this.movingAverageBlockTimeData = [];
-
-    const movingAverageFactor = this.form.get('movingAverageFactor')?.getRawValue();
     const poolAddress = this.form.get('poolAddress')?.getRawValue();
 
     this.httpClient.get(`https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${wethAddress}&address=${poolAddress}&startblock=0&endblock=28922248&sort=asc&apikey=JKZX1IQUGNZR8CAXGG8NN9KD3BAWMEPF4H`)
@@ -288,7 +281,6 @@ export class AppComponent {
           this.labels.push(key);
           const total = group.reduce((acc, x) => acc + x.value, 0) / 10**18;
           const txGroups = groupBy(group, (x: any) => x.hash);
-          console.log(txGroups);
           let fee = 0;
           for (let txKey in txGroups) {
             fee = txGroups[txKey].reduce((acc, x) => acc + x.fee, 0) / 10**18;
@@ -333,7 +325,7 @@ export class AppComponent {
                 position: 'left',
               },
               y1: {
-                type: 'linear',
+                type: scale,
                 display: true,
                 position: 'right',
 
@@ -349,6 +341,23 @@ export class AppComponent {
         this.chart = new Chart(ctx, config as any);
         Chart.register(...registerables);
     });
+  }
+
+  changeChartType() {
+    this.renderChartWethFeesWethPoolSize();
+  }
+
+  private clearChart(): void {
+    this.chart?.clear();
+    this.chart?.destroy();
+    this.chart = undefined;
+  }
+
+  private clearData(): void {
+    this.labels = [];
+    this.feeData = [];
+    this.wethInPoolData = [];
+    this.movingAverageBlockTimeData = [];
   }
 }
 
